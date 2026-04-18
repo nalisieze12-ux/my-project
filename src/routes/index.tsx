@@ -13,6 +13,7 @@ import {
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { TIERS } from "@/lib/tiers";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -61,31 +62,6 @@ const TESTIMONIALS = [
       "The AI workout plans are uncanny. They adapt every week. I've added 80 pounds to my deadlift in six months.",
     name: "James Okafor",
     role: "Member · 1 year",
-  },
-];
-
-const TIERS = [
-  {
-    name: "Free Trial",
-    price: "$0",
-    cadence: "7 days",
-    features: ["Access to 2 classes / week", "Community access", "Locker amenities"],
-    cta: "Start Trial",
-  },
-  {
-    name: "Standard",
-    price: "$49",
-    cadence: "per month",
-    features: ["Unlimited classes", "Workout tracking", "All locations"],
-    cta: "Subscribe",
-    featured: true,
-  },
-  {
-    name: "Premium",
-    price: "$99",
-    cadence: "per month",
-    features: ["Everything in Standard", "Personal training", "AI workout plans", "Spa access"],
-    cta: "Go Premium",
   },
 ];
 
