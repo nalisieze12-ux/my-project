@@ -184,10 +184,12 @@ function WorkoutPlanPage() {
     const newPlan = buildPlan(profile);
     const { data, error } = await supabase
       .from("workout_plans")
-      .insert({
-        user_id: user.id,
-        plan_data: newPlan as unknown as Record<string, unknown>,
-      })
+      .insert([
+        {
+          user_id: user.id,
+          plan_data: newPlan as unknown as Plan as never,
+        },
+      ])
       .select("id, generated_at, plan_data")
       .single();
     setGenerating(false);
