@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,12 +23,10 @@ import {
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
-const searchSchema = z.object({
-  redirect: fallback(z.string(), "/dashboard").default("/dashboard"),
-});
-
 export const Route = createFileRoute("/auth")({
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: (search: Record<string, unknown>): { redirect: string } => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : "/dashboard",
+  }),
   component: AuthPage,
   head: () => ({
     meta: [
