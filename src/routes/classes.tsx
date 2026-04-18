@@ -85,7 +85,7 @@ function ClassesPage() {
       toast.error("Sign in to book a class", {
         description: "Create a free account to reserve your spot.",
       });
-      navigate({ to: "/auth" });
+      navigate({ to: "/auth", search: { redirect: "/classes" } });
       return;
     }
     setActiveClass(cls);
