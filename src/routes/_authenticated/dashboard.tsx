@@ -54,6 +54,19 @@ function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  async function handleCancel(bookingId: string) {
+    setCancellingId(bookingId);
+    const { error } = await supabase.from("bookings").delete().eq("id", bookingId);
+    setCancellingId(null);
+    if (error) {
+      toast.error("Could not cancel booking", { description: error.message });
+      return;
+    }
+    setBookings((prev) => prev.filter((b) => b.id !== bookingId));
+    toast.success("Booking cancelled");
+  }
 
   useEffect(() => {
     if (!user) return;
