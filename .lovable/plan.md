@@ -1,25 +1,31 @@
 
-Plan for `/classes` page:
+Plan for `/pricing` page:
 
-**Route**: `src/routes/classes.tsx` (public view, action gated)
+**Route**: `src/routes/pricing.tsx` (public)
 
 **Layout**:
-- Hero band: "TRAIN WITH THE BEST" + subhead, dark with crimson accent
-- Grid of 6 class cards from `CLASSES` in `src/lib/classes.ts`
-- Each card: class name (Playfair), trainer, schedule (days + time), intensity badge (color-coded: Low=neutral, Moderate=amber, High=orange, Extreme=crimson), description, "Book Class" button
+- Hero band: "MEMBERSHIP" eyebrow + "Choose your tier." headline + subhead — matches landing page typographic rhythm
+- 3-column tier grid (stacks on mobile): Free Trial / Standard $49 / Premium $99 — Standard featured with crimson border + "Most Popular" badge
+- Each card: tier name (Playfair, uppercase), price (large display), cadence, feature list with crimson Check icons, Subscribe CTA
+- "What's included" comparison strip below — small grid showing all features × tiers with check/dash marks
+- FAQ accordion (4-5 items): cancellation, freezing membership, guest passes, location access, billing
+- Bottom CTA band: "Not ready? Start with a 7-day free trial." with link to /auth
 
-**Booking flow**:
-- Click "Book Class":
-  - If `!user` → `navigate({ to: "/auth", search: { redirect: "/classes" } })` + toast "Sign in to book"
-  - If logged in → open shadcn Dialog with date picker (next available date based on class.days), confirm button
-  - On confirm → `supabase.from("bookings").insert({ user_id, class_name, trainer, scheduled_date })` → toast success/error
-- Track per-card loading state
+**Reuse**:
+- Tier data already defined inline on landing — extract to `src/lib/tiers.ts` so landing preview and `/pricing` share one source of truth
+- Navbar + Footer
+- Existing `Accordion` from `@/components/ui/accordion` for FAQ
+- framer-motion entrance animations matching landing rhythm
 
-**Components used**: Card, Button, Badge, Dialog, Calendar (or simple date input), Navbar, Footer, sonner toast
+**Subscribe behavior** (payment deferred):
+- Buttons are visual only — `onClick` shows a sonner toast: "Subscriptions launching soon — start your free trial today." with action linking to `/auth`
+- Free Trial CTA links directly to `/auth`
 
-**Auth integration**: `useAuth()` from `@/lib/auth` for `user`
+**Files**:
+- Create `src/routes/pricing.tsx`
+- Create `src/lib/tiers.ts` (shared TIERS constant with extended feature list for comparison table)
+- Update `src/routes/index.tsx` to import TIERS from `src/lib/tiers.ts` instead of inline definition
 
-**Notes**:
-- No DB schema changes needed (bookings table + RLS already exist)
-- `/auth` route doesn't exist yet — booking redirect will fail until it's built. I'll wire the redirect anyway; the next step (auth page) handles the destination.
-- Keep page server-render safe (no `window` at module scope)
+**SEO**: route `head()` with unique title, description, og:title, og:description; no og:image (no hero image on this page)
+
+**No DB/schema changes.** Stripe integration deferred per approved plan.
