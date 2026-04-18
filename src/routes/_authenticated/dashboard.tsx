@@ -2,13 +2,25 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { format, parseISO } from "date-fns";
-import { Calendar, Dumbbell, User as UserIcon, Flame, ArrowRight } from "lucide-react";
+import { Calendar, Dumbbell, User as UserIcon, Flame, ArrowRight, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -42,6 +54,19 @@ function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  async function handleCancel(bookingId: string) {
+    setCancellingId(bookingId);
+    const { error } = await supabase.from("bookings").delete().eq("id", bookingId);
+    setCancellingId(null);
+    if (error) {
+      toast.error("Could not cancel booking", { description: error.message });
+      return;
+    }
+    setBookings((prev) => prev.filter((b) => b.id !== bookingId));
+    toast.success("Booking cancelled");
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -192,6 +217,48 @@ function DashboardPage() {
                         </p>
                       </div>
                     </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={cancellingId === b.id}
+                          className="rounded-none text-xs font-bold uppercase tracking-widest text-foreground/50 hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          {cancellingId === b.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <X className="mr-1 h-3.5 w-3.5" /> Cancel
+                            </>
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-none border-border bg-card">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="font-display text-2xl font-black uppercase tracking-tight">
+                            Cancel this session?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="text-foreground/60">
+                            You're about to cancel{" "}
+                            <span className="font-bold text-foreground">{b.class_name}</span> with{" "}
+                            {b.trainer} on {format(date, "EEE, MMM d 'at' h:mm a")}. This can't be
+                            undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-none text-xs font-bold uppercase tracking-widest">
+                            Keep it
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleCancel(b.id)}
+                            className="rounded-none bg-destructive text-xs font-bold uppercase tracking-widest text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Cancel booking
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </li>
                 );
               })}
