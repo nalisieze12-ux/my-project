@@ -1,40 +1,28 @@
 
-Plan for `/auth` page:
+Plan: Send booking events to n8n webhook on class booking.
 
-**Route**: `src/routes/auth.tsx` (public)
+**Approach**: After successful Supabase insert in `src/routes/classes.tsx` `handleConfirm`, POST booking payload to the n8n webhook URL. Fire-and-forget (don't block UI on webhook response, log errors silently).
 
-**Layout**:
-- Split-screen: left = full-bleed Unsplash fitness image with crimson tint overlay + APEX brand mark + tagline; right = dark form panel (stacks on mobile, image becomes top band)
-- Right panel: shadcn `Tabs` for "Sign In" / "Sign Up", each with email + password inputs, primary submit button, divider, "Continue with Google" outline button
-- Forgot password link under Sign In form (defer actual reset page — show toast "Coming soon" for now to keep scope tight, OR include — see question)
+**Payload** (JSON):
+```json
+{
+  "class_name": "HIIT",
+  "trainer": "...",
+  "scheduled_date": "2026-04-22T18:00:00.000Z",
+  "scheduled_date_formatted": "Wed, Apr 22 · 6:00PM",
+  "user_email": "user@example.com",
+  "user_name": "Jane Doe",
+  "user_id": "uuid"
+}
+```
 
-**Validation** (zod):
-- email: `.trim().email().max(255)`
-- password: `.min(8).max(72)` (bcrypt limit)
-- displayName (signup only): `.trim().min(1).max(50)`
-- Inline error messages under inputs via react-hook-form + zodResolver
+**Where the data comes from**:
+- `class_name`, `trainer`, `scheduled_date`: already in scope in `handleConfirm`
+- `user_email`: `user.email` from `useAuth()`
+- `user_name`: `user.user_metadata?.display_name` (set at signup) → fallback to `profiles.display_name` → fallback to email prefix. To keep it simple and avoid an extra round-trip, use `user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0]`.
 
-**Auth flows**:
-- Sign up → `supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + "/dashboard", data: { display_name } } })` — `handle_new_user` trigger creates profile + member role automatically
-- Sign in → `supabase.auth.signInWithPassword({ email, password })`
-- Google → `supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + redirectParam } })`
-- All `window.*` access guarded with `typeof window !== "undefined"` (SSR safety)
+**Implementation detail**: Webhook URL hardcoded inline (it's a public webhook URL, not a secret). Direct `fetch()` from the browser — n8n cloud webhooks accept CORS. Wrap in try/catch so a webhook failure never breaks the booking confirmation toast.
 
-**Redirect-back**:
-- `validateSearch`: `{ redirect: string = "/dashboard" }`
-- On successful sign in/up → `navigate({ to: search.redirect })`
-- `beforeLoad`: if already authenticated, redirect to `search.redirect` — but auth state lives in client `AuthProvider` (not router context). Workaround: check `supabase.auth.getSession()` inside component on mount and redirect; OR keep simple and only redirect after successful action. Going with the simpler approach to avoid restructuring router context.
-- Update `/classes` booking redirect to pass `redirect: "/classes"` search param (already wired per prior step — verify)
+**File to change**: `src/routes/classes.tsx` only — add ~10 lines inside `handleConfirm` after the successful insert.
 
-**Toast feedback**: sonner for success ("Welcome back" / "Check your email to confirm") and errors (Supabase error messages)
-
-**SEO**: route `head()` with title "Sign In — APEX Fitness", description, og tags
-
-**Files**:
-- Create `src/routes/auth.tsx`
-- No DB changes (trigger + tables already in place)
-- No new dependencies (zod, react-hook-form, @hookform/resolvers already present via shadcn form)
-
-**Notes for user**:
-- Email confirmation is ON by default in Supabase — new signups will need to confirm email before sign in works. Mention this in the success toast. User can disable in Supabase dashboard for faster testing.
-- Google OAuth requires configuring the Google provider in Supabase dashboard (Auth → Providers → Google) with client ID/secret. Until configured, the Google button will error. I'll wire the button correctly; user enables the provider separately.
+**No DB changes. No new dependencies. No server function needed.**
