@@ -118,6 +118,34 @@ function ClassesPage() {
       toast.error("Booking failed", { description: error.message });
       return;
     }
+
+    // Fire-and-forget webhook to n8n
+    try {
+      const userName =
+        (user.user_metadata?.display_name as string | undefined) ||
+        (user.user_metadata?.full_name as string | undefined) ||
+        user.email?.split("@")[0] ||
+        "Unknown";
+      void fetch(
+        "https://m2p.app.n8n.cloud/webhook/e5997372-e7f3-48c7-98dd-fa60d32ac9be",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            class_name: activeClass.name,
+            trainer: activeClass.trainer,
+            scheduled_date: scheduled.toISOString(),
+            scheduled_date_formatted: `${format(scheduled, "EEE, MMM d")} · ${activeClass.time}`,
+            user_email: user.email,
+            user_name: userName,
+            user_id: user.id,
+          }),
+        },
+      ).catch((err) => console.warn("n8n webhook failed:", err));
+    } catch (err) {
+      console.warn("n8n webhook error:", err);
+    }
+
     toast.success(`${activeClass.name} booked`, {
       description: `${format(scheduled, "EEE, MMM d")} · ${activeClass.time} with ${activeClass.trainer}`,
     });
